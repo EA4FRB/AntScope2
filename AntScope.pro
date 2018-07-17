@@ -22,30 +22,6 @@ TRANSLATIONS += QtLanguage_ru.ts
 TRANSLATIONS += QtLanguage_jp.ts
 CODECFORSRC     = UTF-8
 
-CONFIG -= debug
-CONFIG += release
-
-CONFIG(release) {
-    DESTDIR = $${PWD}/build/release
-    #DEFINES += QT_NO_DEBUG_OUTPUT
-}
-else {
-    DESTDIR = $${PWD}/build/debug
-}
-
-
-OBJECTS_DIR = $$DESTDIR/.obj
-MOC_DIR = $$DESTDIR/.moc
-UI_DIR = $$DESTDIR/.ui
-RCC_DIR = $$DESTDIR/.rcc
-
-message("$${TARGET}: ")
-message("       ["$${DESTDIR}"]")
-message("       ["$${OBJECTS_DIR}"]")
-message("       ["$${MOC_DIR}"]")
-message("       ["$${UI_DIR}"]")
-message("       ["$${RCC_DIR}"]")
-
 SOURCES += main.cpp\
         mainwindow.cpp \
         qcustomplot.cpp \
