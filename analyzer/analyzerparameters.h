@@ -38,6 +38,7 @@ enum {
     AA700ZOOM,
     AA1000,
     AA1400,
+    SARK110,    //@SARK110
     QUANTITY
 };
 static QString names[QUANTITY]={
@@ -57,7 +58,8 @@ static QString names[QUANTITY]={
     "AA-600",
     "AA-700 ZOOM",
     "AA-1000",
-    "AA-1400"
+    "AA-1400",
+    "SARK-110"  //@SARK110
 };
 static QString minFq[QUANTITY]={//in kHz
     "NONE",
@@ -76,7 +78,8 @@ static QString minFq[QUANTITY]={//in kHz
     "100",  //AA-600
     "100",  //AA-700ZOOM
     "100",  //AA-1000
-    "100"   //AA-1400
+    "100",  //AA-1400
+    "100"   //@SARK110
 };
 static QString maxFq[QUANTITY]={//in kHz
     "NONE",
@@ -95,7 +98,8 @@ static QString maxFq[QUANTITY]={//in kHz
     "600000",   //AA-600
     "700000",   //AA-700ZOOM
     "1000000",  //AA-1000
-    "1400000"   //AA-1400
+    "1400000",   //AA-1400
+    "230000",   //@SARK110
 };
 
 static int lcdHeight[QUANTITY]={//in kHz
@@ -115,7 +119,8 @@ static int lcdHeight[QUANTITY]={//in kHz
     240,   //AA-600
     0,   //AA-700ZOOM
     240,  //AA-1000
-    240   //AA-1400
+    240,   //AA-1400
+    240     //@SARK110
 };
 
 static int lcdWidth[QUANTITY]={//in kHz
@@ -135,7 +140,8 @@ static int lcdWidth[QUANTITY]={//in kHz
     320,   //AA-600
     0,   //AA-700ZOOM
     320,  //AA-1000
-    320   //AA-1400
+    320,   //AA-1400
+    400    //@SARK110
 };
 
 enum parse{
