@@ -95,7 +95,20 @@ bool hidAnalyzer::searchAnalyzer(bool arrival)
             {
               break;
             }
-            if( cur_dev->vendor_id == RE_VID && cur_dev->product_id == RE_PID)
+            //-->@SARK110
+            if( cur_dev->vendor_id == RE_VID_SARK && cur_dev->product_id == RE_PID_SARK)
+            {
+                m_dotsNumber = 0;
+                m_scanIdx = 0;
+
+                m_serialNumber = QString::fromWCharArray(cur_dev->serial_number);
+                m_analyzerModel = SARK110;
+                connect(RE_VID_SARK, RE_PID_SARK);
+                result = true;
+                emit analyzerFound(m_analyzerModel);
+            }
+            //<--@SARK110
+            else if( cur_dev->vendor_id == RE_VID && cur_dev->product_id == RE_PID)
             {
                 QString number = QString::fromWCharArray(cur_dev->serial_number);
                 number.remove(4,5);
@@ -216,7 +229,14 @@ bool hidAnalyzer::searchAnalyzer(bool arrival)
             {
               break;
             }
-            if( cur_dev->vendor_id == RE_VID && cur_dev->product_id == RE_PID &&  QString::fromWCharArray(cur_dev->serial_number) == m_serialNumber )
+            //-->@SARK110
+            if( cur_dev->vendor_id == RE_VID_SARK && cur_dev->product_id == RE_PID_SARK /*&&  QString::fromWCharArray(cur_dev->serial_number) == m_serialNumber */)
+            {
+                result = false;
+                break;
+            }
+            //<--@SARK110
+            else if( cur_dev->vendor_id == RE_VID && cur_dev->product_id == RE_PID &&  QString::fromWCharArray(cur_dev->serial_number) == m_serialNumber )
             {
                 result = false;
                 break;
@@ -255,7 +275,14 @@ bool hidAnalyzer::connect(quint32 vid, quint32 pid)
     {
         hid_set_nonblocking(m_hidDevice, 1);
         m_parseState = VER;
-        sendData("VER\r\n");
+        //-->@SARK110
+        if (m_analyzerModel == SARK110)
+        {
+            sarkGetVer();
+        }
+        else
+        //<--@SARK110
+            sendData("VER\r\n");
         return true;
     }
     else
@@ -326,6 +353,13 @@ void hidAnalyzer::startMeasure(int fqFrom, int fqTo, int dotsNumber)
     quint32 center;
     quint32 band;
 
+    //-->@SARK110
+    if (m_analyzerModel == SARK110)
+    {
+        startMeasureSark(fqFrom, fqTo, dotsNumber);
+        return;
+    }
+    //<--@SARK110
 
     if(dotsNumber > 0)
     {
@@ -432,9 +466,16 @@ void hidAnalyzer::hidRead (void)
     {
         return;
     }
+    //-->@SARK110
+    if (m_analyzerModel == SARK110)
+    {
+        processMeasureSark();
+        return;
+    }
+    //<<--@SARK110
+
     unsigned char readBuff[64];
     int read = hid_read(m_hidDevice, readBuff, 64);
-
     if(read > 0)
     {
         if(readBuff[0] == ANTSCOPE_REPORT)
@@ -725,3 +766,123 @@ void hidAnalyzer::stopMeasure()
 {
     sendData("off\r");
 }
+
+//-->@SARK110
+int hidAnalyzer::sarkSndRcv (unsigned char snd[], unsigned char rcv[])
+{
+    unsigned char sndRpt [RPT_SIZE_SARK+1];
+    if(m_hidDevice == NULL)
+    {
+        return -1;
+    }
+    sndRpt[0] = 0;
+    memcpy(sndRpt+1, snd, RPT_SIZE_SARK);
+    hid_write(m_hidDevice, sndRpt, RPT_SIZE_SARK+1);
+    int read;
+    read = hid_read_timeout(m_hidDevice, rcv, RPT_SIZE_SARK, 220);
+    if (read > 1)
+    {
+        if (rcv[0] != 'O')
+            return -2;
+       return 1;
+    }
+    return -3;
+}
+int hidAnalyzer::sarkGetVer()
+{
+    unsigned char snd[RPT_SIZE_SARK];
+    unsigned char rcv[RPT_SIZE_SARK];
+
+    snd[0] = 1; // version cmd
+    m_hidReadTimer->start(0);       // prevents read timer when reading ver
+    int err = sarkSndRcv(snd, rcv);
+    m_hidReadTimer->start(1);
+    if (err < 0)
+        return err;
+    m_version.clear();
+    for (int ii = 3; ii <RPT_SIZE_SARK; ii++)
+    {
+        if (rcv[ii] == 0)
+        {
+            m_version += "";
+            break;
+        }
+        m_version += rcv[ii];
+    }
+    return 1;
+}
+int hidAnalyzer::sarkMeasure(int freq, float *pR, float *pX )
+{
+    unsigned char snd[RPT_SIZE_SARK];
+    unsigned char rcv[RPT_SIZE_SARK];
+
+    snd[0] = 2; // measure cmd
+    snd[5] = 1; // calibrated
+    snd[6] = 0; // nb samples
+    int2Buf(&snd[1], freq);
+    int err = sarkSndRcv(snd, rcv);
+    if (err < 0)
+        return err;
+    buf2Float(pR, &rcv[1]);
+    buf2Float(pX, &rcv[5]);
+    return 1;
+}
+
+void hidAnalyzer::int2Buf (unsigned char tu8Buf[4], qint32 u32Val)
+{
+    tu8Buf[3] = (uint8_t)((u32Val&0xff000000)>>24);
+    tu8Buf[2] = (uint8_t)((u32Val&0x00ff0000)>>16);
+    tu8Buf[1] = (uint8_t)((u32Val&0x0000ff00)>>8);
+    tu8Buf[0] = (uint8_t)((u32Val&0x000000ff)>>0);
+}
+void hidAnalyzer::buf2Float (float *pfVal, unsigned char tu8Buf[4])
+{
+    qint32 u32Val;
+    buf2Int(&u32Val, tu8Buf);
+    *((qint32*)(pfVal)) = u32Val;
+}
+void hidAnalyzer::buf2Int (qint32 *pu32Val, unsigned char tu8Buf[4])
+{
+    qint32 u32Val;
+
+    u32Val = tu8Buf[3] << 24;
+    u32Val += tu8Buf[2] << 16;
+    u32Val += tu8Buf[1] << 8;
+    u32Val += tu8Buf[0] << 0;
+
+    *pu32Val = u32Val;
+}
+
+void hidAnalyzer::startMeasureSark(int fqFrom, int fqTo, int dotsNumber)
+{
+    float fR, fX;
+
+    if (dotsNumber == 0)
+        sarkMeasure(0, &fR, &fX);
+
+    m_fqFrom = fqFrom;
+    m_fqTo = fqTo;
+    m_dotsNumber = dotsNumber;
+    m_scanIdx = 0;
+
+}
+void hidAnalyzer::processMeasureSark()
+{
+    float fR, fX;
+
+    if (m_dotsNumber == 0)
+        return;
+    if (m_scanIdx > m_dotsNumber)
+        return;
+    int step = (m_fqTo - m_fqFrom) / (m_dotsNumber) ;
+    int freq = m_fqFrom + (m_scanIdx*step);
+    if (sarkMeasure(freq, &fR, &fX) < 0)
+        return;
+
+    QString str = QString::number((double)(freq/1000000.0)) + "," + QString::number(fR) + "," + QString::number(fX) + '\n';
+    m_stringList.append(str);
+    emit analyzerDataStringArrived(str);
+    m_scanIdx++;
+}
+//<--@SARK110
+
