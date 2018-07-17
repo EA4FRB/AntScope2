@@ -484,6 +484,10 @@ void Analyzer::on_checkUpdatesBtn_clicked()
         connect(m_downloader, SIGNAL(progress(qint64,qint64)),
                 this, SLOT(on_progress(qint64,qint64)));
     }
+    //-->@SARK110
+    if (m_analyzerModel == SARK110)
+        return;
+    //<--@SARK110
     QString url = "https://www.rigexpert.com/getfirmware?model=";
     url += names[m_analyzerModel].toLower().remove(" ").remove("-");
     url += "&sn=";
