@@ -21,6 +21,12 @@
 #define RE_BOOT_VID     0x0483
 #define RE_BOOT_PID     0xA1DA
 
+//-->@SARK110
+#define RE_VID_SARK     0x0483
+#define RE_PID_SARK     0x5750
+#define RPT_SIZE_SARK   18
+//<--@SARK110
+
 #define REPORT_SIZE 64
 #define ANTSCOPE_REPORT			0x07
 #define INPUT_BUFFER_SIZE		32768
@@ -80,7 +86,21 @@ private:
     void sendData(QString data);
     qint32 parse (QByteArray arr);
     bool waitAnswer();
+//-->@SARK110
+    int m_fqFrom;
+    int m_fqTo;
+    int m_dotsNumber;
+    int m_scanIdx;
 
+    int sarkSndRcv (unsigned char snd[], unsigned char rcv[]);
+    int sarkGetVer();
+    int sarkMeasure(int freq, float *pR, float *pX );
+    void startMeasureSark(int fqFrom, int fqTo, int dotsNumber);
+    void processMeasureSark();
+    void int2Buf (unsigned char tu8Buf[4], qint32 u32Val);
+    void buf2Float (float *pfVal, unsigned char tu8Buf[4]);
+    void buf2Int (qint32 *pu32Val, unsigned char tu8Buf[4]);
+//<--@SARK110
 signals:
     void analyzerFound (quint32);
     void analyzerDisconnected();
