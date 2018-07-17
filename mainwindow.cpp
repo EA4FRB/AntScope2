@@ -1786,6 +1786,10 @@ void MainWindow::on_analyzerFound(QString name)
 
     ui->singleStart->setEnabled(true);
     ui->continuousStartBtn->setEnabled(true);
+    //-->@SARK110
+    if (m_analyzer->getModel() == SARK110)
+        return;
+    //<--@SARK110
     ui->analyzerDataBtn->setEnabled(true);
     ui->screenshotAA->setEnabled(true);
 }
